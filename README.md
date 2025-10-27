@@ -18,6 +18,9 @@
 
 ## 系统要求
 - Node.js >= 20.12.0
+## AI工具使用配置
+以Trae为例
+![](./imgs/config.png)
 
 ## npm package
 感谢[HQHC](https://github.com/HQHC)发布的npm包
@@ -28,6 +31,20 @@
     "command": "npx",
     "args": ["bilibili-mcp"],
     "description": "B站视频搜索 MCP 服务，可以在AI应用中搜索B站视频内容。"
+    }
+  }
+}
+```
+## 本地编译使用
+>需要编译之后才可以使用.
+先npm run build然后这里改成你build之后的dist文件夹路径，"args": ["d:\\your-path\\bilibili-mcp-js\\dist\\index.js"] 
+```json
+{
+  "mcpServers": {
+    "bilibili-search": {
+      "command": "node",
+      "args": ["d:\\your-path\\bilibili-mcp-js\\dist\\index.js"],
+      "description": "B站视频搜索 MCP 服务，可以在AI应用中搜索B站视频内容。"
     }
   }
 }

@@ -14,10 +14,13 @@
 - Bilibili 動画検索
 - ページネーションクエリのサポート
 - 動画情報の返却（タイトル、作者、再生回数、動画の長さなど）
-- MCP プロトコルに基づく標準化されたインターフェース
+- MCP プロトコルに基づく標準化されたインターフェース（stdio と streamable http をサポート）
 
 ## システム要件
 - Node.js >= 20.12.0
+## AIツール設定
+Traeを例として
+![](./imgs/config.png)
 
 ## npm package
 [HQHC](https://github.com/HQHC)が公開したnpmパッケージに感謝
@@ -28,6 +31,21 @@
     "command": "npx",
     "args": ["bilibili-mcp"],
     "description": "Bilibili動画検索用MCPサービス。AIアプリケーションでBilibiliの動画コンテンツを検索できます。"
+    }
+  }
+}
+```
+
+## ローカルコンパイル使用
+>使用前にコンパイルが必要です。
+まず npm run build を実行し、次にビルド後の dist フォルダのパスに変更してください。"args": ["d:\\your-path\\bilibili-mcp-js\\dist\\index.js"] 
+```json
+{
+  "mcpServers": {
+    "bilibili-search": {
+      "command": "node",
+      "args": ["d:\\your-path\\bilibili-mcp-js\\dist\\index.js"],
+      "description": "Bilibili動画検索用MCPサービス。AIアプリケーションでBilibiliの動画コンテンツを検索できます。"
     }
   }
 }
@@ -49,8 +67,13 @@ const llm = new ChatOpenAI({
 bun:
 
 ```bash
+# 依存関係をインストール
 bun i
+# stdio モード
 bun index.ts
+# streamable http モード
+TRANSPORT=remote bun index.ts
+TRANSPORT=remote PORT=8888 bun index.ts
 # テストスクリプト
 bun test.js
 # MCP Inspector
@@ -63,8 +86,13 @@ bun example.ts
 npm:
 
 ```bash
+# 依存関係をインストール
 npm i
+# stdio モード
 npm run start
+# streamable http モード
+TRANSPORT=remote npm run start
+TRANSPORT=remote PORT=8888 npm run start
 # テストスクリプト
 npm run test
 # MCP Inspector

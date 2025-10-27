@@ -14,10 +14,13 @@ This is a Bilibili video search server based on the Model Context Protocol (MCP)
 - Bilibili video search
 - Support for paginated queries
 - Returns video information (title, author, view count, duration, etc.)
-- Standardized interface based on the MCP protocol
+- Standardized interface based on the MCP protocol (supports stdio and streamable http)
 
 ## System Requirements
 - Node.js >= 20.12.0
+## AI Tool Configuration
+Using Trae as an example
+![](./imgs/config.png)
 
 ## npm package
 Thanks to [HQHC](https://github.com/HQHC)for publishing the npm package
@@ -28,6 +31,20 @@ Thanks to [HQHC](https://github.com/HQHC)for publishing the npm package
     "command": "npx",
     "args": ["bilibili-mcp"],
     "description": "Bilibili Video Search MCP service, enabling AI applications to search Bilibili video content."
+    }
+  }
+}
+```
+## Local Compilation Usage
+>Compilation is required before use.
+First run npm run build, then change this to your built dist folder path, "args": ["d:\\your-path\\bilibili-mcp-js\\dist\\index.js"] 
+```json
+{
+  "mcpServers": {
+    "bilibili-search": {
+      "command": "node",
+      "args": ["d:\\your-path\\bilibili-mcp-js\\dist\\index.js"],
+      "description": "Bilibili Video Search MCP service, enabling AI applications to search Bilibili video content."
     }
   }
 }
@@ -48,8 +65,13 @@ const llm = new ChatOpenAI({
 bun:
 
 ```bash
+# Install dependencies
 bun i
+# stdio mode
 bun index.ts
+# streamable http mode
+TRANSPORT=remote bun index.ts
+TRANSPORT=remote PORT=8888 bun index.ts
 # Test script
 bun test.js
 # MCP Inspector
@@ -62,8 +84,13 @@ bun example.ts
 npm:
 
 ```bash
+# Install dependencies
 npm i
+# stdio mode
 npm run start
+# streamable http mode
+TRANSPORT=remote npm run start
+TRANSPORT=remote PORT=8888 npm run start
 # Test script
 npm run test
 # MCP Inspector
