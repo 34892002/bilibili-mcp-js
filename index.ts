@@ -23,6 +23,8 @@ interface BilibiliSearchResult {
   bvid: string;
   upic: string;
   pic: string;
+  tag?: string;
+  description?: string;
 }
 
 const isValidSearchArgs = (
@@ -191,7 +193,7 @@ class BilibiliSearchServer {
               transport.close();
           });
 
-          await server.server.connect(transport);
+          await this.server.connect(transport);
           await transport.handleRequest(req, res, req.body);
       });
       const port = parseInt(process.env.PORT || '3000');
