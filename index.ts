@@ -198,10 +198,7 @@ class BilibiliSearchServer {
       const port = parseInt(process.env.PORT || '3000');
       app.listen(port, () => {
           console.log(`Bilibili Search MCP Server running on http://localhost:${port}/mcp`);
-      }).on('error', error => {
-          console.error('Server error:', error);
-          process.exit(1);
-      });
+      })
     } else {
         let transport = new StdioServerTransport();
         await this.server.connect(transport);
