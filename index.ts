@@ -4,7 +4,6 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import express from 'express';
-import packageJson from "./package.json" with { type: "json"};
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -141,7 +140,7 @@ class BilibiliSearchServer {
     try {
       // 调用src/index.ts中的searchBilibili函数获取搜索结果
       const searchResults = await searchBilibili(keyword, page, limit);
-      
+
       // 处理视频项目
       const results: BilibiliSearchResult[] = searchResults.map((video: any) => ({
         title: this.cleanTitle(video.title),
@@ -176,7 +175,7 @@ class BilibiliSearchServer {
   }
 
   async run() {
-    if (process.env.TRANSPORT == "remote") {
+    if ((process.env.TRANSPORT || undefined) == "remote") {
       // Set up Express and HTTP transport
       const app = express();
       app.use(express.json());
