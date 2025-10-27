@@ -36,7 +36,7 @@ const isValidSearchArgs = (
   (args.limit === undefined || typeof args.limit === "number");
 
 class BilibiliSearchServer {
-  private server: Server;
+  public server: Server;
 
   constructor() {
     this.server = new Server(
@@ -203,7 +203,7 @@ app.post('/mcp', async (req, res) => {
         transport.close();
     });
 
-    await server.connect(transport);
+    await server.server.connect(transport);
     await transport.handleRequest(req, res, req.body);
 });
 
