@@ -25,7 +25,9 @@
     "@langchain/core": "^0.3.43",
     "@langchain/langgraph": "^0.2.57",
     "@langchain/openai": "^0.4.9",
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "latest",
+    "express": "latest",
+    "@types/express": "latest",
     "axios": "^1.8.4",
     "langchain": "^0.3.19",
     "tough-cookie": "^5.1.2"

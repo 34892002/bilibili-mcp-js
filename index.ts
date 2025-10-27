@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import express from 'express';
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -32,7 +35,7 @@ const isValidSearchArgs = (
   (args.limit === undefined || typeof args.limit === "number");
 
 class BilibiliSearchServer {
-  private server: Server;
+  public server: Server;
 
   constructor() {
     this.server = new Server(
@@ -137,7 +140,7 @@ class BilibiliSearchServer {
     try {
       // 调用src/index.ts中的searchBilibili函数获取搜索结果
       const searchResults = await searchBilibili(keyword, page, limit);
-      
+
       // 处理视频项目
       const results: BilibiliSearchResult[] = searchResults.map((video: any) => ({
         title: this.cleanTitle(video.title),
@@ -172,11 +175,40 @@ class BilibiliSearchServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
-    await this.server.connect(transport);
-    console.error("Bilibili Search MCP server running on stdio");
+    if ((process.env.TRANSPORT || undefined) == "remote") {
+      // Set up Express and HTTP transport
+      const app = express();
+      app.use(express.json());
+
+      app.post('/mcp', async (req, res) => {
+          // Create a new transport for each request to prevent request ID collisions
+          const transport = new StreamableHTTPServerTransport({
+              sessionIdGenerator: undefined,
+              enableJsonResponse: true
+          });
+
+          res.on('close', () => {
+              transport.close();
+          });
+
+          await server.server.connect(transport);
+          await transport.handleRequest(req, res, req.body);
+      });
+      const port = parseInt(process.env.PORT || '3000');
+      app.listen(port, () => {
+          console.log(`Bilibili Search MCP Server running on http://localhost:${port}/mcp`);
+      }).on('error', error => {
+          console.error('Server error:', error);
+          process.exit(1);
+      })
+    } else {
+        let transport = new StdioServerTransport();
+        await this.server.connect(transport);
+        console.error("Bilibili Search MCP server running on stdio");
+    }
   }
 }
 
-const server = new BilibiliSearchServer();
-server.run().catch(console.error);
+    const server = new BilibiliSearchServer();
+    server.run().catch(console.error);
+

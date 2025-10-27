@@ -14,7 +14,7 @@
 - B站视频搜索
 - 支持分页查询
 - 返回视频信息（标题、作者、播放量、时长等）
-- 基于 MCP 协议的标准化接口
+- 基于 MCP 协议的标准化接口(支持 stdio 和 streamable http)
 
 ## 系统要求
 - Node.js >= 20.12.0
@@ -49,8 +49,13 @@ const llm = new ChatOpenAI({
 bun:
 
 ```bash
+# 安装依赖
 bun i
+# stdio 模式
 bun index.ts
+# streamable http 模式
+TRANSPORT=remote bun index.ts
+TRANSPORT=remote PORT=8888 bun index.ts
 # 测试脚本
 bun test.js
 # MCP Inspector
@@ -63,8 +68,13 @@ bun example.ts
 npm:
 
 ```bash
+# 安装依赖
 npm i
+# stdio 模式
 npm run start
+# streamable http 模式
+TRANSPORT=remote npm run start
+TRANSPORT=remote PORT=8888 npm run start
 # 测试脚本
 npm run test
 # MCP Inspector
