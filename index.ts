@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
+import packageJson from "./package.json" with { type: "json"};
 import {
   CallToolRequestSchema,
   ErrorCode,
@@ -172,7 +174,10 @@ class BilibiliSearchServer {
   }
 
   async run() {
-    const transport = new StdioServerTransport();
+    let transport = new StdioServerTransport();
+    if (packageJson.mcp.transport == "remote") {
+      transport = new SSEServerTransport();
+    }
     await this.server.connect(transport);
     console.error("Bilibili Search MCP server running on stdio");
   }

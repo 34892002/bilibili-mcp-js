@@ -13,6 +13,11 @@
     "build:bun": "bun build index.ts --outfile ./dist/index.js --target node",
     "inspector": "npx @modelcontextprotocol/inspector ./dist/index.js"
   },
+  "mcp": {
+    "port": 8000,
+    "path": "/sse",
+    "transport": "remote"
+  },
   "peerDependencies": {
     "typescript": "^5"
   },

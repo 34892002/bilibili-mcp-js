@@ -4,10 +4,14 @@
     // Enable latest features
     "lib": ["ESNext", "DOM"],
     "target": "ES2020",
-    "module": "Node16",
+    "module": "node20",
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
+
+    // package.json import
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
 
     // Bundler mode
     "moduleResolution": "Node16",
