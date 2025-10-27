@@ -3,6 +3,7 @@
 [![English](https://img.shields.io/badge/English-Click-yellow)](README-en.md)
 [![中文文档](https://img.shields.io/badge/中文文档-点击查看-orange)](README.md)
 [![日本語](https://img.shields.io/badge/日本語-クリック-青)](README-ja.md)
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/34892002/bilibili-mcp-js)](https://archestra.ai/mcp-catalog/34892002__bilibili-mcp-js)
 
 ## 简介
 这是一个基于 Model Context Protocol (MCP) 的 B站视频搜索服务器。该服务器提供了简单的 API 接口，允许用户搜索 B站 的视频内容。提供LangChain调用示例、测试脚本。
@@ -104,4 +105,3 @@ node dist/example.js
 ## 截图
 ![](./imgs/test-01.png)
 ![](./imgs/test-02.png)
-
