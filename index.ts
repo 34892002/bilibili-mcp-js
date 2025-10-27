@@ -10,7 +10,7 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { searchBilibili } from "./src/index.js";
+import { searchBilibili, getHotContent, getRegionHot } from "./src/index.js";
 
 
 interface BilibiliSearchResult {
@@ -89,47 +89,89 @@ class BilibiliSearchServer {
             required: ["keyword"],
           },
         },
+        {
+          name: "bilibili-hot",
+          description: "获取B站热门内容",
+          inputSchema: {
+            type: "object",
+            properties: {
+              type: {
+                type: "string",
+                description: "热门类型：popular（综合热门）或 precious（入站必刷）",
+                enum: ["popular", "precious"],
+                default: "popular",
+              },
+            },
+            required: [],
+          },
+        },
       ],
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      if (request.params.name !== "bilibili-search") {
+      if (request.params.name === "bilibili-search") {
+        if (!isValidSearchArgs(request.params.arguments)) {
+          throw new McpError(ErrorCode.InvalidParams, "无效的搜索参数");
+        }
+
+        const keyword = request.params.arguments.keyword;
+        const page = request.params.arguments.page || 1;
+        const limit = Math.min(request.params.arguments.limit || 10, 20);
+
+        try {
+          const results = await this.performSearch(keyword, page, limit);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(results, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `搜索错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-hot") {
+        const hotType = (request.params.arguments?.type as string) || "popular";
+        
+        try {
+          const results = await this.getHotContent(hotType);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(results, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取热门内容错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else {
         throw new McpError(
           ErrorCode.MethodNotFound,
           `未知工具: ${request.params.name}`
         );
-      }
-
-      if (!isValidSearchArgs(request.params.arguments)) {
-        throw new McpError(ErrorCode.InvalidParams, "无效的搜索参数");
-      }
-
-      const keyword = request.params.arguments.keyword;
-      const page = request.params.arguments.page || 1;
-      const limit = Math.min(request.params.arguments.limit || 10, 20);
-
-      try {
-        const results = await this.performSearch(keyword, page, limit);
-        return {
-          content: [
-            {
-              type: "text",
-              text: JSON.stringify(results, null, 2),
-            },
-          ],
-        };
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: "text",
-              text: `搜索错误: ${
-                error instanceof Error ? error.message : String(error)
-              }`,
-            },
-          ],
-          isError: true,
-        };
       }
     });
   }
@@ -170,6 +212,50 @@ class BilibiliSearchServer {
     return title.replace(/<em class="keyword">(.*?)<\/em>/g, "$1");
   }
 
+  private async getHotContent(type: string): Promise<BilibiliSearchResult[]> {
+    try {
+      let hotResults;
+      
+      if (type === "precious") {
+        // 获取入站必刷内容
+        hotResults = await getRegionHot(0);
+      } else {
+        // 获取综合热门内容
+        hotResults = await getHotContent();
+      }
+
+      // 处理热门视频项目
+      const results: BilibiliSearchResult[] = hotResults.map((video: any) => ({
+        title: this.cleanTitle(video.title),
+        author: video.owner?.name || video.author || "",
+        play_count: parseInt(video.stat?.view || video.play) || 0,
+        duration: this.formatDuration(video.duration),
+        publish_date: this.formatDate(video.pubdate || video.ctime),
+        url: video.short_link_v2 || `https://www.bilibili.com/video/${video.bvid}`,
+        bvid: video.bvid || "",
+        upic: video.owner?.face || video.upic || "",
+        pic: video.pic || "",
+        tag: video.tname || video.tag || "",
+        description: video.desc || video.description || "",
+      }));
+
+      return results;
+    } catch (error) {
+      console.error("获取B站热门内容时出错:", error);
+      throw new Error(`获取B站热门内容失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  private formatDuration(duration: any): string {
+    if (typeof duration === 'string') return duration;
+    if (typeof duration === 'number') {
+      const minutes = Math.floor(duration / 60);
+      const seconds = duration % 60;
+      return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+    return "";
+  }
+
   private formatDate(timestamp: number): string {
     if (!timestamp) return "";
     const date = new Date(timestamp * 1000);
@@ -178,7 +264,6 @@ class BilibiliSearchServer {
 
   async run() {
     if ((process.env.TRANSPORT || undefined) == "remote") {
-      // Set up Express and HTTP transport
       const app = express();
       app.use(express.json());
 

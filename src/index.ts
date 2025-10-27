@@ -86,6 +86,121 @@ function fixUrl(url: string): string {
   }
 }
 
+// 获取热门内容
+export async function getHotContent(
+  rid: number = 0, // 分区ID，0为全站
+  type: string = "all", // 类型：all, origin, rookie
+  day: number = 3 // 时间范围：1, 3, 7, 30
+) {
+  // 创建 cookie jar
+  const jar = new CookieJar();
+  const client = axios.create();
+
+  // 第一步：访问 bilibili.com 获取 cookies
+  try {
+    const biliResponse = await client.get(HOME_URL, {
+      headers: BW_HEADERS,
+    });
+    if (biliResponse.status === 200) {
+      if (biliResponse.headers["set-cookie"]) {
+        const setCookies = biliResponse.headers["set-cookie"];
+        for (const cookieStr of setCookies) {
+          await jar.setCookieSync(cookieStr, HOME_URL);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("访问B站失败:", error);
+  }
+
+  // 第二步：使用获取的 cookies 访问热门内容 API
+  const hotUrl = `https://api.bilibili.com/x/web-interface/popular?ps=20&pn=1`;
+  
+  // 获取将要发送的 cookies
+  const cookiesForRequest = await jar.getCookieString(HOME_URL);
+
+  // 手动将 cookies 添加到请求头
+  const response = await client.get(hotUrl, {
+    headers: {
+      ...BW_HEADERS,
+      Cookie: cookiesForRequest,
+      Referer: "https://www.bilibili.com/v/popular/all/",
+    },
+  });
+
+  if (response?.data?.code == 0) {
+    const res = response.data.data.list || [];
+    res.forEach((item: any) => {
+      console.log(item);
+      item.pic = fixUrl(item.pic);
+      if (item.owner && item.owner.face) {
+        item.owner.face = fixUrl(item.owner.face);
+      }
+    });
+    return res;
+  } else {
+    console.log("获取热门内容失败:", response?.data);
+    return [];
+  }
+}
+
+// 获取分区热门内容
+export async function getRegionHot(
+  rid: number, // 分区ID
+  day: number = 7 // 时间范围：1, 3, 7, 30
+) {
+  // 创建 cookie jar
+  const jar = new CookieJar();
+  const client = axios.create();
+
+  // 第一步：访问 bilibili.com 获取 cookies
+  try {
+    const biliResponse = await client.get(HOME_URL, {
+      headers: BW_HEADERS,
+    });
+    if (biliResponse.status === 200) {
+      if (biliResponse.headers["set-cookie"]) {
+        const setCookies = biliResponse.headers["set-cookie"];
+        for (const cookieStr of setCookies) {
+          await jar.setCookieSync(cookieStr, HOME_URL);
+        }
+      }
+    }
+  } catch (error) {
+    console.error("访问B站失败:", error);
+  }
+
+  // 第二步：使用获取的 cookies 访问分区热门 API
+  const regionUrl = `https://api.bilibili.com/x/web-interface/popular/precious?page_size=20&page_num=1`;
+  
+  // 获取将要发送的 cookies
+  const cookiesForRequest = await jar.getCookieString(HOME_URL);
+
+  // 手动将 cookies 添加到请求头
+  const response = await client.get(regionUrl, {
+    headers: {
+      ...BW_HEADERS,
+      Cookie: cookiesForRequest,
+      Referer: "https://www.bilibili.com/v/popular/precious/",
+    },
+  });
+
+  if (response?.data?.code == 0) {
+    const res = response.data.data.list || [];
+    res.forEach((item: any) => {
+      console.log(item);
+      item.pic = fixUrl(item.pic);
+      if (item.owner && item.owner.face) {
+        item.owner.face = fixUrl(item.owner.face);
+      }
+    });
+    return res;
+  } else {
+    console.log("获取分区热门内容失败:", response?.data);
+    return [];
+  }
+}
+
 // 测试
 // // 执行搜索
 // const res = await searchBilibili("一栗小莎子").catch((err) => {
