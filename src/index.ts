@@ -441,3 +441,71 @@ export async function getCompleteUserInfo(uid: string | number) {
     throw error;
   }
 }
+
+/**
+ * 获取番剧时间表
+ * @param types 内容类型，1表示番剧/动漫
+ * @param before 获取当前时间之前多少天的播出信息
+ * @param after 获取当前时间之后多少天的播出信息
+ * @returns 番剧时间表数据
+ */
+export async function getBangumiTimeline(
+  types: number = 1,
+  before: number = 6,
+  after: number = 6
+) {
+  try {
+    const { client, cookieString } = await getBilibiliCookies(HOME_URL);
+
+    const response = await client.get(
+      `https://api.bilibili.com/pgc/web/timeline`,
+      {
+        params: {
+          types,
+          before,
+          after,
+        },
+        headers: {
+          ...BW_HEADERS,
+          Cookie: cookieString,
+        },
+      }
+    );
+
+    if (response.data.code !== 0) {
+      throw new Error(`API错误: ${response.data.message}`);
+    }
+
+    const timelineData = response.data.result;
+    if (timelineData && Array.isArray(timelineData)) {
+      timelineData.forEach((dayData: any) => {
+        if (dayData.episodes && Array.isArray(dayData.episodes)) {
+          dayData.episodes.forEach((item: any) => {
+            if (item.ep_cover) {
+              item.ep_cover = fixUrl(item.ep_cover);
+            }
+            if (item.square_cover) {
+              item.square_cover = fixUrl(item.square_cover);
+            }
+            if (item.cover) {
+              item.cover = fixUrl(item.cover);
+            }
+          });
+        }
+      });
+    }
+
+    return {
+      success: true,
+      data: timelineData,
+      message: "获取番剧时间表成功",
+    };
+  } catch (error: any) {
+    console.error("获取番剧时间表失败:", error);
+    return {
+      success: false,
+      data: null,
+      message: error.message || "获取番剧时间表失败",
+    };
+  }
+}

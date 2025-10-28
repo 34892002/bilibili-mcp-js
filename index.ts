@@ -10,8 +10,17 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { searchBilibili, getHotContent, getVideoDetail, getUserInfo, getUserStat, getUserVideos, getCompleteUserInfo } from "./src/index.js";
 
+import { 
+  searchBilibili, 
+  getHotContent, 
+  getVideoDetail, 
+  getUserInfo, 
+  getUserStat, 
+  getUserVideos, 
+  getCompleteUserInfo, 
+  getBangumiTimeline 
+} from "./src/index.js";
 
 interface BilibiliSearchResult {
   title: string;
@@ -192,6 +201,37 @@ class BilibiliSearchServer {
               },
             },
             required: ["uid"],
+          },
+        },
+        {
+          name: "bilibili-bangumi-timeline",
+          description: "获取B站番剧时间表，支持查询指定时间范围内的番剧播出信息",
+          inputSchema: {
+            type: "object",
+            properties: {
+              types: {
+                type: "number",
+                description: "内容类型，1表示番剧/动漫（默认：1，目前仅支持番剧类型）",
+                default: 1,
+                enum: [1],
+              },
+              before: {
+                type: "number",
+                description: "获取当前时间之前多少天的播出信息（默认：6天，建议不超过7天以避免API限制）",
+                default: 6,
+                minimum: 0,
+                maximum: 7,
+              },
+              after: {
+                type: "number",
+                description: "获取当前时间之后多少天的播出信息（默认：6天，建议不超过7天以避免API限制）",
+                default: 6,
+                minimum: 0,
+                maximum: 7,
+              },
+            },
+            required: [],
+            additionalProperties: false,
           },
         },
       ],
@@ -422,6 +462,35 @@ class BilibiliSearchServer {
               {
                 type: "text",
                 text: `获取视频详情错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-bangumi-timeline") {
+        const types = Number(request.params.arguments?.types) || 1;
+        const before = Number(request.params.arguments?.before) || 6;
+        const after = Number(request.params.arguments?.after) || 6;
+
+        try {
+          const result = await getBangumiTimeline(types, before, after);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          console.error(`获取番剧时间表时发生错误:`, error);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取番剧时间表错误: ${
                   error instanceof Error ? error.message : String(error)
                 }`,
               },
