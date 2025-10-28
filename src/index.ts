@@ -13,12 +13,13 @@ const DEFAULT_PAGE_SIZE = 20;
 const DEFAULT_PAGE_NUM = 1;
 
 // 请求头常量
+const USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0";
 const BW_HEADERS = {
   Accept: "*/*",
   Connection: "keep-alive",
   "Accept-Encoding": "gzip, deflate, br",
-  "User-Agent":
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36 Edg/134.0.0.0",
+  "User-Agent": USER_AGENT,
   Referer: HOME_URL,
 };
 
@@ -51,26 +52,26 @@ function processVideoItem(item: any): void {
  * 获取 Bilibili cookies
  * @returns Promise<{jar: CookieJar, client: AxiosInstance, cookieString: string}>
  */
-async function getBilibiliCookies() {
+async function getBilibiliCookies(url: string) {
   const jar = new CookieJar();
   const client = axios.create();
 
   try {
-    const biliResponse = await client.get(HOME_URL, {
-      headers: BW_HEADERS,
+    const biliResponse = await client.get(url, {
+      headers: {...BW_HEADERS, Referer: url},
     });
     
     if (biliResponse.status === 200 && biliResponse.headers["set-cookie"]) {
       const setCookies = biliResponse.headers["set-cookie"];
       for (const cookieStr of setCookies) {
-        await jar.setCookieSync(cookieStr, HOME_URL);
+        await jar.setCookieSync(cookieStr, url);
       }
     }
   } catch (error) {
     console.error("访问B站失败:", error);
   }
 
-  const cookieString = await jar.getCookieString(HOME_URL);
+  const cookieString = await jar.getCookieString(url);
   return { jar, client, cookieString };
 }
 
@@ -81,7 +82,7 @@ export async function searchBilibili(
   order: string = "totalrank"
 ) {
   // 获取 cookies 和 client
-  const { client, cookieString } = await getBilibiliCookies();
+  const { client, cookieString } = await getBilibiliCookies(HOME_URL);
 
   // 使用获取的 cookies 访问搜索 API
   const encodeStr = encodeURIComponent(keyword);
@@ -114,7 +115,7 @@ export async function getHotContent(
   type: "all" | "history" | "rank" | "music" = "all"
 ) {
   // 获取 cookies 和 client
-  const { client, cookieString } = await getBilibiliCookies();
+  const { client, cookieString } = await getBilibiliCookies(HOME_URL);
 
   // 根据类型选择不同的API和参数
   let hotUrl: string;
@@ -165,9 +166,6 @@ export async function getHotContent(
  * @returns Promise<VideoDetail>
  */
 export async function getVideoDetail(videoId: string) {
-  // 获取 cookies 和 client
-  const { client, cookieString } = await getBilibiliCookies();
-
   // 判断是BV号还是AV号，构建相应的API URL
   let videoUrl: string;
   let refererUrl: string;
@@ -184,6 +182,9 @@ export async function getVideoDetail(videoId: string) {
   } else {
     throw new Error(`不支持的视频ID格式: ${videoId}`);
   }
+
+  // 获取 cookies 和 client
+  const { client, cookieString } = await getBilibiliCookies(refererUrl);
 
   try {
     // 发送请求获取视频详情
@@ -243,6 +244,200 @@ export async function getVideoDetail(videoId: string) {
     }
   } catch (error) {
     console.error("获取视频详情出错:", error);
+    throw error;
+  }
+}
+
+/**
+ * 获取UP主基本信息
+ * @param uid UP主的UID
+ * @returns Promise<UserInfo>
+ */
+export async function getUserInfo(uid: string | number) {
+  const userUrl = `${API_X}/space/acc/info?mid=${uid}`;
+  const refererUrl = `https://space.bilibili.com/${uid}`;
+
+  try {
+    // 获取 cookies 和 client
+    const { client, cookieString } = await getBilibiliCookies(refererUrl);
+    
+    // 发送请求获取UP主基本信息，使用Cookie
+    const response = await client.get(userUrl, {
+      headers: {
+        ...BW_HEADERS,
+        Cookie: cookieString,
+        Referer: refererUrl,
+      },
+    });
+
+    if (response?.data?.code === 0) {
+      const data = response.data.data;
+      
+      // 处理头像URL
+      if (data.face) {
+        data.face = fixUrl(data.face);
+      }
+
+      // 返回整理后的UP主基本信息
+      return {
+        mid: data.mid,
+        name: data.name,
+        sex: data.sex,
+        face: data.face,
+        sign: data.sign,
+        rank: data.rank,
+        level: data.level,
+        jointime: data.jointime,
+        moral: data.moral,
+        silence: data.silence,
+        coins: data.coins,
+        fans_badge: data.fans_badge,
+        official: data.official,
+        vip: data.vip,
+        pendant: data.pendant,
+        nameplate: data.nameplate,
+        user_honour_info: data.user_honour_info,
+        is_followed: data.is_followed,
+        top_photo: data.top_photo ? fixUrl(data.top_photo) : null,
+        theme: data.theme,
+        sys_notice: data.sys_notice,
+        live_room: data.live_room,
+        birthday: data.birthday,
+        school: data.school,
+        profession: data.profession,
+        tags: data.tags,
+        series: data.series
+      };
+    } else {
+      console.log("获取UP主信息失败:", response?.data);
+      throw new Error(`获取UP主信息失败: ${response?.data?.message || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error("获取UP主信息出错:", error);
+    throw error;
+  }
+}
+
+/**
+ * 获取UP主统计信息（粉丝数、关注数等）
+ * @param uid UP主的UID
+ * @returns Promise<UserStat>
+ */
+export async function getUserStat(uid: string | number) {
+  const statUrl = `${API_X}/relation/stat?vmid=${uid}`;
+  const refererUrl = `https://space.bilibili.com/${uid}`;
+
+  try {
+    // 获取 cookies 和 client
+    const { client, cookieString } = await getBilibiliCookies(refererUrl);
+    
+    // 发送请求获取UP主统计信息，使用Cookie
+    const response = await client.get(statUrl, {
+      headers: {
+        ...BW_HEADERS,
+        Cookie: cookieString,
+        Referer: refererUrl,
+      },
+    });
+
+    if (response?.data?.code === 0) {
+      const data = response.data.data;
+      
+      return {
+        mid: data.mid,
+        following: data.following,  // 关注数
+        whisper: data.whisper,     // 悄悄关注数
+        black: data.black,         // 黑名单数
+        follower: data.follower    // 粉丝数
+      };
+    } else {
+      console.log("获取UP主统计信息失败:", response?.data);
+      throw new Error(`获取UP主统计信息失败: ${response?.data?.message || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error("获取UP主统计信息出错:", error);
+    throw error;
+  }
+}
+
+/**
+ * 获取UP主视频列表
+ * @param uid UP主的UID
+ * @param page 页码，默认为1
+ * @param pageSize 每页数量，默认为20
+ * @param order 排序方式：pubdate(发布时间)、click(播放量)、stow(收藏量)
+ * @returns Promise<UserVideos>
+ */
+export async function getUserVideos(
+  uid: string | number,
+  page: number = 1,
+  pageSize: number = 20,
+  order: string = "pubdate"
+) {
+  throw new Error('风控校验严格，既然官方不让搞那就别搞了');
+  // https://space.bilibili.com/122879/upload/video
+  // https://api.bilibili.com/x/space/wbi/arc/search?pn=1&ps=40&tid=0&special_type=&order=pubdate&mid=122879&index=0&keyword=&order_avoided=true&platform=web
+  const videosUrl = `${API_X}/space/wbi/arc/search?tid=0&special_type=&order=${order}&mid=${uid}&ps=${pageSize}&pn=${page}&index=0&keyword=&order_avoided=true&platform=web`;
+  const refererUrl = `https://space.bilibili.com/${uid}/upload/video`;
+
+  try {
+    // 获取 cookies 和 client
+    const { client, cookieString } = await getBilibiliCookies(refererUrl);
+    
+    // 发送请求获取UP主视频列表，使用Cookie
+    const response = await client.get(videosUrl, {
+      headers: {
+        ...BW_HEADERS,
+        Cookie: cookieString,
+        Referer: refererUrl,
+      },
+    });
+
+    if (response?.data?.code === 0) {
+      const data = response.data.data;
+      
+      // 处理视频列表中的图片URL
+      if (data.list && data.list.vlist) {
+        data.list.vlist.forEach((video: any) => {
+          if (video.pic) {
+            video.pic = fixUrl(video.pic);
+          }
+        });
+      }
+
+      return {
+        list: data.list,
+        page: data.page,
+        episodic_button: data.episodic_button
+      };
+    } else {
+      console.log("获取UP主视频列表失败:", response?.data);
+      throw new Error(`获取UP主视频列表失败: ${response?.data?.message || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error("获取UP主视频列表出错:", error);
+    throw error;
+  }
+}
+
+/**
+ * 获取UP主完整信息（包含基本信息和统计信息）
+ * @param uid UP主的UID
+ * @returns Promise<CompleteUserInfo>
+ */
+export async function getCompleteUserInfo(uid: string | number) {
+  try {
+    const [userInfo, userStat] = await Promise.all([
+      getUserInfo(uid),
+      getUserStat(uid)
+    ]);
+
+    return {
+      ...userInfo,
+      stat: userStat
+    };
+  } catch (error) {
+    console.error("获取UP主完整信息出错:", error);
     throw error;
   }
 }

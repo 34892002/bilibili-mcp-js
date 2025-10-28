@@ -10,7 +10,7 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { searchBilibili, getHotContent, getVideoDetail } from "./src/index.js";
+import { searchBilibili, getHotContent, getVideoDetail, getUserInfo, getUserStat, getUserVideos, getCompleteUserInfo } from "./src/index.js";
 
 
 interface BilibiliSearchResult {
@@ -119,6 +119,81 @@ class BilibiliSearchServer {
             required: ["videoId"],
           },
         },
+        {
+          name: "bilibili-user-info",
+          description: "获取UP主基本信息",
+          inputSchema: {
+            type: "object",
+            properties: {
+              uid: {
+                type: "string",
+                description: "UP主的UID（用户ID）"
+              },
+            },
+            required: ["uid"],
+          },
+        },
+        {
+          name: "bilibili-user-stat",
+          description: "获取UP主统计信息（粉丝数、关注数等）",
+          inputSchema: {
+            type: "object",
+            properties: {
+              uid: {
+                type: "string",
+                description: "UP主的UID（用户ID）"
+              },
+            },
+            required: ["uid"],
+          },
+        },
+        {
+          name: "bilibili-user-videos",
+          description: "暂不支持-获取UP主视频列表",
+          inputSchema: {
+            type: "object",
+            properties: {
+              uid: {
+                type: "string",
+                description: "UP主的UID（用户ID）"
+              },
+              page: {
+                type: "number",
+                description: "页码（默认：1）",
+                minimum: 1,
+                default: 1
+              },
+              pageSize: {
+                type: "number",
+                description: "每页数量（默认：20）",
+                minimum: 1,
+                maximum: 50,
+                default: 20
+              },
+              order: {
+                type: "string",
+                description: "排序方式：pubdate（发布时间）、click（播放量）、stow（收藏量）",
+                enum: ["pubdate", "click", "stow"],
+                default: "pubdate"
+              },
+            },
+            required: ["uid"],
+          },
+        },
+        {
+          name: "bilibili-user-complete",
+          description: "获取UP主完整信息（包含基本信息和统计信息）",
+          inputSchema: {
+            type: "object",
+            properties: {
+              uid: {
+                type: "string",
+                description: "UP主的UID（用户ID）"
+              },
+            },
+            required: ["uid"],
+          },
+        },
       ],
     }));
 
@@ -148,6 +223,129 @@ class BilibiliSearchServer {
               {
                 type: "text",
                 text: `搜索错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-user-info") {
+        if (!request.params.arguments?.uid) {
+          throw new McpError(ErrorCode.InvalidParams, "缺少必需的uid参数");
+        }
+
+        const uid = request.params.arguments.uid as string;
+        
+        try {
+          const result = await getUserInfo(uid);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取UP主信息错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-user-stat") {
+        if (!request.params.arguments?.uid) {
+          throw new McpError(ErrorCode.InvalidParams, "缺少必需的uid参数");
+        }
+
+        const uid = request.params.arguments.uid as string;
+        
+        try {
+          const result = await getUserStat(uid);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取UP主统计信息错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-user-videos") {
+        if (!request.params.arguments?.uid) {
+          throw new McpError(ErrorCode.InvalidParams, "缺少必需的uid参数");
+        }
+
+        const uid = request.params.arguments.uid as string;
+        const page = (request.params.arguments.page as number) || 1;
+        const pageSize = (request.params.arguments.pageSize as number) || 20;
+        const order = (request.params.arguments.order as string) || "pubdate";
+        
+        try {
+          const result = await getUserVideos(uid, page, pageSize, order);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取UP主视频列表错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-user-complete") {
+        if (!request.params.arguments?.uid) {
+          throw new McpError(ErrorCode.InvalidParams, "缺少必需的uid参数");
+        }
+
+        const uid = request.params.arguments.uid as string;
+        
+        try {
+          const result = await getCompleteUserInfo(uid);
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取UP主完整信息错误: ${
                   error instanceof Error ? error.message : String(error)
                 }`,
               },

@@ -91,7 +91,7 @@ serverProcess.stdout.on("data", (data) => {
       if (currentTestIndex < testTypes.length) {
         sendNextTest();
       } else {
-        console.log("🎉 所有热门内容类型测试完成！");
+        console.log("所有热门内容类型测试完成！");
         // 关闭服务器
         try { serverProcess.stdin.end(); } catch {}
         serverProcess.kill();
@@ -121,7 +121,7 @@ function sendNextTest() {
 }
 
 // 发送请求前打印请求内容
-console.log("🔥 测试B站所有热门内容类型获取功能...\n");
+console.log("测试B站所有热门内容类型获取功能...\n");
 console.log("发送 MCP 请求:", JSON.stringify(request, null, 2));
 serverProcess.stdin.write(JSON.stringify(request) + "\n");
 
