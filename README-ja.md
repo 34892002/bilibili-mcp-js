@@ -11,10 +11,11 @@
 - LangChain のサンプルコードは [mcp-langchain-ts-client](https://github.com/isaacwasserman/mcp-langchain-ts-client)を参考にしています
 
 ## 特徴
-- Bilibili 動画検索
-- ページネーションクエリのサポート
-- 動画情報の返却（タイトル、作者、再生回数、動画の長さなど）
-- MCP プロトコルに基づく標準化されたインターフェース（stdio と streamable http をサポート）
+- Bilibili動画コンテンツ概要リストの検索
+- Bilibiliホットコンテンツの取得（総合ホット、必見、ランキング、音楽チャート）
+- Bilibili動画詳細情報の取得（BV番号またはAV番号をサポート）
+- UP主情報の取得（基本情報、フォロワー数、フォロー数など）
+- 番組タイムライン（時間範囲内のアニメ放送情報）
 
 ## システム要件
 - Node.js >= 20.12.0

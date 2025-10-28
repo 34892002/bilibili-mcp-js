@@ -11,10 +11,11 @@ This is a Bilibili video search server based on the Model Context Protocol (MCP)
 - LangChain example code referenced from [mcp-langchain-ts-client](https://github.com/isaacwasserman/mcp-langchain-ts-client)
 
 ## Features
-- Bilibili video search
-- Support for paginated queries
-- Returns video information (title, author, view count, duration, etc.)
-- Standardized interface based on the MCP protocol (supports stdio and streamable http)
+- Search Bilibili video content summary list
+- Get Bilibili hot content (comprehensive hot, must-watch, rankings, music charts)
+- Get Bilibili video details (supports BV or AV numbers)
+- Get UP master information (basic info, follower count, following count, etc.)
+- Bangumi timeline (anime broadcast information within time range)
 
 ## System Requirements
 - Node.js >= 20.12.0

@@ -12,10 +12,11 @@
 - LangChain 示例代码参考自 [mcp-langchain-ts-client](https://github.com/isaacwasserman/mcp-langchain-ts-client)
 
 ## 功能特点
-- B站视频搜索
-- 支持分页查询
-- 返回视频信息（标题、作者、播放量、时长等）
-- 基于 MCP 协议的标准化接口(支持 stdio 和 streamable http)
+- 搜索B站视频内容简介列表
+- 获取B站热门内容(综合热门、入站必刷、排行榜、全站音乐榜)
+- 获取B站视频详情信息（支持BV号或AV号）
+- 获取UP主信息（基本信息、粉丝数、关注数等）
+- 番剧时间表（时间范围内的番剧播出信息）
 
 ## 系统要求
 - Node.js >= 20.12.0
