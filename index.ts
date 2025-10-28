@@ -10,7 +10,7 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { searchBilibili, getHotContent, getRegionHot } from "./src/index.js";
+import { searchBilibili, getHotContent } from "./src/index.js";
 
 
 interface BilibiliSearchResult {
@@ -97,9 +97,9 @@ class BilibiliSearchServer {
             properties: {
               type: {
                 type: "string",
-                description: "热门类型：popular（综合热门）或 precious（入站必刷）",
-                enum: ["popular", "precious"],
-                default: "popular",
+                description: "热门类型：all（综合热门）、history（入站必刷）、rank（排行榜）、music（全站音乐榜）",
+                enum: ["all", "history", "rank", "music"],
+                default: "all",
               },
             },
             required: [],
@@ -142,7 +142,7 @@ class BilibiliSearchServer {
           };
         }
       } else if (request.params.name === "bilibili-hot") {
-        const hotType = (request.params.arguments?.type as string) || "popular";
+        const hotType = (request.params.arguments?.type as string) || "all";
         
         try {
           const results = await this.getHotContent(hotType);
@@ -212,18 +212,9 @@ class BilibiliSearchServer {
     return title.replace(/<em class="keyword">(.*?)<\/em>/g, "$1");
   }
 
-  private async getHotContent(type: string): Promise<BilibiliSearchResult[]> {
+  private async getHotContent(type: any = 'all'): Promise<BilibiliSearchResult[]> {
     try {
-      let hotResults;
-      
-      if (type === "precious") {
-        // 获取入站必刷内容
-        hotResults = await getRegionHot(0);
-      } else {
-        // 获取综合热门内容
-        hotResults = await getHotContent();
-      }
-
+      const hotResults = await getHotContent(type);
       // 处理热门视频项目
       const results: BilibiliSearchResult[] = hotResults.map((video: any) => ({
         title: this.cleanTitle(video.title),
