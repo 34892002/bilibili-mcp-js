@@ -30,7 +30,7 @@ Traeを例として
   "mcpServers": {
     "bilibili-search": {
     "command": "npx",
-    "args": ["bilibili-mcp"],
+    "args": ["bilibili-mcp-js"],
     "description": "Bilibili動画検索用MCPサービス。AIアプリケーションでBilibiliの動画コンテンツを検索できます。"
     }
   }
