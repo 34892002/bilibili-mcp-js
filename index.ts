@@ -10,7 +10,7 @@ import {
   ListToolsRequestSchema,
   McpError,
 } from "@modelcontextprotocol/sdk/types.js";
-import { searchBilibili, getHotContent } from "./src/index.js";
+import { searchBilibili, getHotContent, getVideoDetail } from "./src/index.js";
 
 
 interface BilibiliSearchResult {
@@ -65,8 +65,8 @@ class BilibiliSearchServer {
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: [
         {
-          name: "bilibili-search",
-          description: "搜索B站视频内容",
+          name: "bilibili-search-summary",
+          description: "搜索B站视频内容简介列表",
           inputSchema: {
             type: "object",
             properties: {
@@ -105,11 +105,25 @@ class BilibiliSearchServer {
             required: [],
           },
         },
+        {
+          name: "bilibili-video-detail",
+          description: "获取B站视频详情信息",
+          inputSchema: {
+            type: "object",
+            properties: {
+              videoId: {
+                type: "string",
+                description: "视频ID，支持BV号（如：BV1xx411c7mD）或AV号（如：av123456或123456）"
+              },
+            },
+            required: ["videoId"],
+          },
+        },
       ],
     }));
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      if (request.params.name === "bilibili-search") {
+      if (request.params.name === "bilibili-search-summary") {
         if (!isValidSearchArgs(request.params.arguments)) {
           throw new McpError(ErrorCode.InvalidParams, "无效的搜索参数");
         }
@@ -160,6 +174,56 @@ class BilibiliSearchServer {
               {
                 type: "text",
                 text: `获取热门内容错误: ${
+                  error instanceof Error ? error.message : String(error)
+                }`,
+              },
+            ],
+            isError: true,
+          };
+        }
+      } else if (request.params.name === "bilibili-video-detail") {
+        if (!request.params.arguments?.videoId) {
+          throw new McpError(ErrorCode.InvalidParams, "缺少必需的videoId参数");
+        }
+
+        const videoId = request.params.arguments.videoId as string;
+        
+        // 验证视频ID格式（支持BV号和AV号）
+        const isBV = /^BV[a-zA-Z0-9]{10}$/.test(videoId);
+        const isAV = /^av\d+$/.test(videoId) || /^\d+$/.test(videoId);
+        
+        if (!isBV && !isAV) {
+          throw new McpError(ErrorCode.InvalidParams, "无效的视频ID格式，请提供BV号（如：BV1xx411c7mD）或AV号（如：av123456或123456）");
+        }
+
+        try {
+          const result = await this.getVideoDetail(videoId);
+          if (!result) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `视频详情获取失败: 未找到视频ID ${videoId} 的相关信息`,
+                },
+              ],
+              isError: true,
+            };
+          }
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        } catch (error) {
+          console.error(`获取视频详情时发生错误:`, error);
+          return {
+            content: [
+              {
+                type: "text",
+                text: `获取视频详情错误: ${
                   error instanceof Error ? error.message : String(error)
                 }`,
               },
@@ -251,6 +315,53 @@ class BilibiliSearchServer {
     if (!timestamp) return "";
     const date = new Date(timestamp * 1000);
     return date.toISOString().split("T")[0];
+  }
+
+  private async getVideoDetail(videoId: string): Promise<any> {
+    try {
+      const videoDetail = await getVideoDetail(videoId);
+      
+      // 格式化返回结果
+      return {
+        bvid: videoDetail.bvid,
+        aid: videoDetail.aid,
+        title: videoDetail.title,
+        description: videoDetail.desc,
+        pic: videoDetail.pic,
+        duration: this.formatDuration(videoDetail.duration),
+        publish_date: this.formatDate(videoDetail.pubdate),
+        create_time: this.formatDate(videoDetail.ctime),
+        videos: videoDetail.videos,
+        tid: videoDetail.tid,
+        tname: videoDetail.tname,
+        copyright: videoDetail.copyright === 1 ? "原创" : "转载",
+        owner: {
+          mid: videoDetail.owner.mid,
+          name: videoDetail.owner.name,
+          face: videoDetail.owner.face
+        },
+        stat: {
+          view: videoDetail.stat.view,
+          danmaku: videoDetail.stat.danmaku,
+          reply: videoDetail.stat.reply,
+          favorite: videoDetail.stat.favorite,
+          coin: videoDetail.stat.coin,
+          share: videoDetail.stat.share,
+          like: videoDetail.stat.like,
+          now_rank: videoDetail.stat.now_rank,
+          his_rank: videoDetail.stat.his_rank
+        },
+        pages: videoDetail.pages.map((page: any) => ({
+          cid: page.cid,
+          page: page.page,
+          part: page.part,
+          duration: this.formatDuration(page.duration)
+        }))
+      };
+    } catch (error) {
+      console.error("获取B站视频详情时出错:", error);
+      throw new Error(`获取B站视频详情失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async run() {

@@ -48,7 +48,7 @@ serverProcess.stdout.on("data", (data) => {
         method: "tools/call",
         params: {
           version: "0.1.0",
-          name: "bilibili-search",
+          name: "bilibili-search-summary",
           arguments: { keyword: "岛市老八", limit: 10 },
         },
       };

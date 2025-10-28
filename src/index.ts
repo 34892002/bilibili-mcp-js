@@ -159,18 +159,90 @@ export async function getHotContent(
   }
 }
 
-// 测试
-// // 执行搜索
-// const res = await searchBilibili("一栗小莎子").catch((err) => {
-//   console.log("程序执行出错:", err?.response?.data || err);
-// });
+/**
+ * 获取视频详情信息
+ * @param videoId 视频ID，支持BV号或AV号
+ * @returns Promise<VideoDetail>
+ */
+export async function getVideoDetail(videoId: string) {
+  // 获取 cookies 和 client
+  const { client, cookieString } = await getBilibiliCookies();
 
-// // 将结果保存到文件
-// const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-// const filename = `bilibili_search_${timestamp}.json`;
-// fs.writeFileSync(
-//   path.join(__dirname, filename),
-//   JSON.stringify(res, null, 2),
-//   "utf8"
-// );
-// console.log(`搜索结果已保存到文件: ${filename}`);
+  // 判断是BV号还是AV号，构建相应的API URL
+  let videoUrl: string;
+  let refererUrl: string;
+  
+  if (videoId.startsWith('BV')) {
+    // BV号
+    videoUrl = `${API_WEB}/view?bvid=${videoId}`;
+    refererUrl = `https://www.bilibili.com/video/${videoId}`;
+  } else if (videoId.startsWith('av') || /^\d+$/.test(videoId)) {
+    // AV号（支持av123456或纯数字123456格式）
+    const aid = videoId.startsWith('av') ? videoId.substring(2) : videoId;
+    videoUrl = `${API_WEB}/view?aid=${aid}`;
+    refererUrl = `https://www.bilibili.com/video/av${aid}`;
+  } else {
+    throw new Error(`不支持的视频ID格式: ${videoId}`);
+  }
+
+  try {
+    // 发送请求获取视频详情
+    const response = await client.get(videoUrl, {
+      headers: {
+        ...BW_HEADERS,
+        Cookie: cookieString,
+        Referer: refererUrl,
+      },
+    });
+
+    if (response?.data?.code === 0) {
+      const data = response.data.data;
+      
+      // 处理图片URL
+      data.pic = fixUrl(data.pic);
+      if (data.owner && data.owner.face) {
+        data.owner.face = fixUrl(data.owner.face);
+      }
+
+      // 返回整理后的视频详情信息
+      return {
+        bvid: data.bvid,
+        aid: data.aid,
+        title: data.title,
+        desc: data.desc,
+        pic: data.pic,
+        duration: data.duration,
+        pubdate: data.pubdate,
+        ctime: data.ctime,
+        videos: data.videos,
+        tid: data.tid,
+        tname: data.tname,
+        copyright: data.copyright,
+        owner: {
+          mid: data.owner.mid,
+          name: data.owner.name,
+          face: data.owner.face
+        },
+        stat: {
+          aid: data.stat.aid,
+          view: data.stat.view,
+          danmaku: data.stat.danmaku,
+          reply: data.stat.reply,
+          favorite: data.stat.favorite,
+          coin: data.stat.coin,
+          share: data.stat.share,
+          like: data.stat.like,
+          now_rank: data.stat.now_rank,
+          his_rank: data.stat.his_rank
+        },
+        pages: data.pages || []
+      };
+    } else {
+      console.log("获取视频详情失败:", response?.data);
+      throw new Error(`获取视频详情失败: ${response?.data?.message || '未知错误'}`);
+    }
+  } catch (error) {
+    console.error("获取视频详情出错:", error);
+    throw error;
+  }
+}
