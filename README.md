@@ -31,7 +31,7 @@
   "mcpServers": {
     "bilibili-search": {
     "command": "npx",
-    "args": ["bilibili-mcp"],
+    "args": ["bilibili-mcp-js"],
     "description": "B站视频搜索 MCP 服务，可以在AI应用中搜索B站视频内容。"
     }
   }
