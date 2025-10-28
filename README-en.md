@@ -30,7 +30,7 @@ Thanks to [HQHC](https://github.com/HQHC)for publishing the npm package
   "mcpServers": {
     "bilibili-search": {
     "command": "npx",
-    "args": ["bilibili-mcp"],
+    "args": ["bilibili-mcp-js"],
     "description": "Bilibili Video Search MCP service, enabling AI applications to search Bilibili video content."
     }
   }
