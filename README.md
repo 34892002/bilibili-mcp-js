@@ -106,3 +106,8 @@ node dist/example.js
 ## 截图
 ![](./imgs/test-01.png)
 ![](./imgs/test-02.png)
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/34892002-bilibili-mcp-js).
+
