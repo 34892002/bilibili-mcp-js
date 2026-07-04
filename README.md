@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/34892002-bilibili-mcp-js-badge.png)](https://mseep.ai/app/34892002-bilibili-mcp-js)
+
 # Bilibili MCP
 
 [![English](https://img.shields.io/badge/English-Click-yellow)](README-en.md)
