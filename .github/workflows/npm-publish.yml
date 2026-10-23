@@ -10,49 +10,51 @@ on:
         required: false
         type: string
 
+permissions:
+  id-token: write   # OIDC，Trusted Publishing 必需
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '20.x'
-        cache: 'npm'
+        node-version: '22'                          # 必须 >= 22.14
         registry-url: 'https://registry.npmjs.org'
-        
+
     - name: Install dependencies
       run: npm ci
-      
+
     - name: Run tests and build
       run: |
         npm run build
         npm pack --dry-run
-        
+
     - name: Update version if specified
       if: github.event.inputs.version != ''
       run: npm version ${{ github.event.inputs.version }} --no-git-tag-version
-      
+
     - name: Publish to NPM
       run: npm publish --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      # 注意：不再需要 NODE_AUTH_TOKEN / secrets.NPM_TOKEN
 
   notify:
     needs: publish
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
     - name: Notify success
       if: needs.publish.result == 'success'
       run: |
         echo "✅ Package successfully published to NPM!"
-        
+
     - name: Notify failure
       if: needs.publish.result == 'failure'
       run: |
