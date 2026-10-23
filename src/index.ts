@@ -101,8 +101,9 @@ export async function searchBilibili(
   if (response?.data?.code == 0) {
     const res = response.data.data.result.find((item: any) => item.result_type === "video")
     ?.data || []
-    res.forEach(processVideoItem);
-    return res;
+    const limitedResults = res.slice(0, limit);
+    limitedResults.forEach(processVideoItem);
+    return limitedResults;
   } else {
     console.log("搜索失败:", response?.data);
     return []; 
